@@ -1,5 +1,13 @@
 # Speech to text on Dialog-RSN-1
 
+Two small terminal programs on the OpenAI Realtime SDK, pointed at Dialog-RSN-1:
+
+- `transcribe.py`, a transcriber. Speak, and each finished sentence prints as a line.
+- `support_agent.py`, a voice-in, text-out chat bot. Speak, and Sam from Northwind Outfitters
+  answers in text about three made-up orders.
+
+## The transcriber
+
 A terminal transcriber. Your microphone streams to Dialog-RSN-1 through the OpenAI Realtime
 SDK, and each finished sentence prints as a line. The only thing that differs from an OpenAI
 session is the client's base URL and key.
@@ -63,6 +71,29 @@ uv run transcribe.py --file clip.wav
 - **The reply.** A turn always produces a text reply. The instructions ask for the single word
   "ok" so it is fast and cheap. `--reply` shows it, mainly as proof the model heard you.
 - **Text only.** `output_modalities` is `["text"]`. The service has no TTS, so nothing plays.
+
+## The support agent
+
+```bash
+uv run support_agent.py
+uv run support_agent.py --file call.wav
+```
+
+Same connection, same audio path, different `instructions`. The whole of what Sam knows is in
+`prompt.py`: three orders in different states (shipped, held on a backorder, delivered), the
+return and cancellation policy, and a rule to ask for the order number first. No tools, no
+lookups; the data is in the prompt, which is enough for a demo of the conversation itself.
+
+Try: "I'm calling about order N W one zero four eight two, it's under Maria Alvarez", then
+"can I still cancel it?". Sam should refuse, because that order has shipped, and offer a return.
+
+Two things the code does that the transcriber does not:
+
+- **The greeting is seeded, not generated.** It prints locally and is also added to the
+  conversation as an assistant item, so the model's history starts with it.
+- **Sam's reply is held until your line has printed.** Dialog-RSN-1 emits its reply before
+  the transcript of what it heard, since the transcript is the last section of its output.
+  Printing in arrival order would put the answer above the question.
 
 ## What this is not
 
