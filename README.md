@@ -5,6 +5,7 @@ Two small terminal programs on the OpenAI Realtime SDK, pointed at Dialog-RSN-1:
 - `transcribe.py`, a transcriber. Speak, and each finished sentence prints as a line.
 - `support_agent.py`, a voice-in, text-out chat bot. Speak, and Sam from Northwind Outfitters
   answers in text about three made-up orders.
+- `node/support_agent.js`, the same agent in Node, on the npm `openai` package.
 
 ## The transcriber
 
@@ -94,6 +95,27 @@ Two things the code does that the transcriber does not:
 - **Sam's reply is held until your line has printed.** Dialog-RSN-1 emits its reply before
   the transcript of what it heard, since the transcript is the last section of its output.
   Printing in arrival order would put the answer above the question.
+
+## The support agent in Node
+
+```bash
+cd node
+npm install
+npm start
+npm start -- --file call.wav
+npm start -- --list-devices
+```
+
+Needs Node 22 and a working PortAudio build for `naudiodon2`, which npm compiles on install.
+It reads the same `.env` as the Python scripts, one folder up.
+
+The connection is the npm SDK's `OpenAIRealtimeWS`, given an `OpenAI` client whose `baseURL`
+is PolyAI's. It builds `wss://api.us.poly.ai/v1/realtime?model=dialog-rsn-1` and sends
+`Authorization: Bearer` itself. Events arrive as `rt.on("<event type>", handler)`. The `ws`
+package is a peer dependency of that transport, so it is listed explicitly.
+
+`node/prompt.js` is generated from `prompt.py`, so the two agents always share one prompt.
+After editing `prompt.py`, run `uv run gen_prompt.py`.
 
 ## What this is not
 
