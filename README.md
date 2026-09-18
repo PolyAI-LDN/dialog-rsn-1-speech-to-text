@@ -2,8 +2,8 @@
 
 Two small terminal programs on the OpenAI Realtime SDK, pointed at Dialog-RSN-1:
 
-- `transcribe.py`, a transcriber. Speak, and each finished sentence prints as a line.
-- `support_agent.py`, a voice-in, text-out chat bot. Speak, and Sam from Northwind Outfitters
+- `python/transcribe.py`, a transcriber. Speak, and each finished sentence prints as a line.
+- `python/support_agent.py`, a voice-in, text-out chat bot. Speak, and Sam from Northwind Outfitters
   answers in text about three made-up orders.
 - `node/support_agent.js`, the same agent in Node, on the npm `openai` package.
 
@@ -33,9 +33,12 @@ The SDK builds `wss://api.us.poly.ai/v1/realtime?model=dialog-rsn-1`, sends the 
 
 ```bash
 cp .env.example .env      # then paste a workspace API key from Agent Studio
+cd python
 uv sync
 uv run transcribe.py
 ```
+
+The `.env` lives at the repo root and is shared by the Python and Node programs.
 
 Needs Python 3.12 and a microphone. Personal access tokens are refused by the service; use a
 workspace key.
@@ -81,7 +84,7 @@ uv run support_agent.py --file call.wav
 ```
 
 Same connection, same audio path, different `instructions`. The whole of what Sam knows is in
-`prompt.py`: three orders in different states (shipped, held on a backorder, delivered), the
+`python/prompt.py`: three orders in different states (shipped, held on a backorder, delivered), the
 return and cancellation policy, and a rule to ask for the order number first. No tools, no
 lookups; the data is in the prompt, which is enough for a demo of the conversation itself.
 
@@ -107,15 +110,15 @@ npm start -- --list-devices
 ```
 
 Needs Node 22 and a working PortAudio build for `naudiodon2`, which npm compiles on install.
-It reads the same `.env` as the Python scripts, one folder up.
+It reads the `.env` at the repo root, the same one the Python scripts use.
 
 The connection is the npm SDK's `OpenAIRealtimeWS`, given an `OpenAI` client whose `baseURL`
 is PolyAI's. It builds `wss://api.us.poly.ai/v1/realtime?model=dialog-rsn-1` and sends
 `Authorization: Bearer` itself. Events arrive as `rt.on("<event type>", handler)`. The `ws`
 package is a peer dependency of that transport, so it is listed explicitly.
 
-`node/prompt.js` is generated from `prompt.py`, so the two agents always share one prompt.
-After editing `prompt.py`, run `uv run gen_prompt.py`.
+`node/prompt.js` is generated from `python/prompt.py`, so the two agents always share one prompt.
+After editing `prompt.py`, run `uv run gen_prompt.py` from `python/`.
 
 ## What this is not
 
