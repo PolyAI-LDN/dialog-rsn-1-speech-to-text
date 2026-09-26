@@ -1,5 +1,7 @@
 # Speech to text on Dialog-RSN-1
 
+Companion code for [Transcribe speech with the OpenAI Realtime SDK](https://dialog-rsn-1-eap-docs.pages.dev/dialog-rsn-1/guides/speech-to-text/).
+
 Two small terminal programs on the OpenAI Realtime SDK, pointed at Dialog-RSN-1:
 
 - `python/transcribe.py`, a transcriber. Speak, and each finished sentence prints as a line.
@@ -124,3 +126,7 @@ After editing `prompt.py`, run `uv run gen_prompt.py` from `python/`.
 
 No diarisation, no punctuation control, no interim results beyond the streamed deltas. It is a
 demonstration that a stock OpenAI Realtime client works unchanged against Dialog-RSN-1.
+
+## License
+
+Apache 2.0. See [LICENSE](LICENSE).
