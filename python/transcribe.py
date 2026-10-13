@@ -27,7 +27,7 @@ from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
 MODEL = "dialog-rsn-1"
-DEFAULT_URL = "https://api.us.poly.ai/v1"
+DEFAULT_URL = "https://api.studio.poly.ai/v1"
 
 # The protocol's one sample rate. A stock client streams 24 kHz without saying so, and the
 # service reads an undeclared rate as 24 kHz, so the mic is opened at that rate and no

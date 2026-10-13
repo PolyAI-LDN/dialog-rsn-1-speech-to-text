@@ -18,7 +18,7 @@ import { OpenAIRealtimeWS } from "openai/realtime/ws";
 import { GREETING, INSTRUCTIONS } from "./prompt.js";
 
 const MODEL = "dialog-rsn-1";
-const DEFAULT_URL = "https://api.us.poly.ai/v1";
+const DEFAULT_URL = "https://api.studio.poly.ai/v1";
 
 // The protocol's one sample rate. The mic opens at it, so nothing resamples anywhere.
 const SAMPLE_RATE = 24_000;

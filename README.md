@@ -18,7 +18,7 @@ session is the client's base URL and key.
 ```python
 from openai import AsyncOpenAI
 
-client = AsyncOpenAI(api_key=DIALOGUE_API_KEY, base_url="https://api.us.poly.ai/v1")
+client = AsyncOpenAI(api_key=DIALOGUE_API_KEY, base_url="https://api.studio.poly.ai/v1")
 
 async with client.realtime.connect(model="dialog-rsn-1") as conn:
     await conn.session.update(session={...})
@@ -28,7 +28,7 @@ async with client.realtime.connect(model="dialog-rsn-1") as conn:
             print(event.transcript)
 ```
 
-The SDK builds `wss://api.us.poly.ai/v1/realtime?model=dialog-rsn-1`, sends the key as
+The SDK builds `wss://api.studio.poly.ai/v1/realtime?model=dialog-rsn-1`, sends the key as
 `Authorization: Bearer`, and parses every event into its typed models. Nothing is patched.
 
 ## Setup
@@ -115,7 +115,7 @@ Needs Node 22 and a working PortAudio build for `naudiodon2`, which npm compiles
 It reads the `.env` at the repo root, the same one the Python scripts use.
 
 The connection is the npm SDK's `OpenAIRealtimeWS`, given an `OpenAI` client whose `baseURL`
-is PolyAI's. It builds `wss://api.us.poly.ai/v1/realtime?model=dialog-rsn-1` and sends
+is PolyAI's. It builds `wss://api.studio.poly.ai/v1/realtime?model=dialog-rsn-1` and sends
 `Authorization: Bearer` itself. Events arrive as `rt.on("<event type>", handler)`. The `ws`
 package is a peer dependency of that transport, so it is listed explicitly.
 
