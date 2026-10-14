@@ -29,9 +29,9 @@ from openai import AsyncOpenAI
 MODEL = "dialog-rsn-1"
 DEFAULT_URL = "wss://api.studio.poly.ai/v1/realtime"
 
-# The protocol's one sample rate. A stock client streams 24 kHz without saying so, and the
-# service reads an undeclared rate as 24 kHz, so the mic is opened at that rate and no
-# resampling happens anywhere.
+# A stock client streams 24 kHz without saying so, and the service reads an undeclared rate as
+# 24 kHz, so the mic is opened at that rate. The service resamples to the model's own rate, so
+# nothing resamples on the client.
 SAMPLE_RATE = 24_000
 CHUNK_MS = 100
 CHUNK_FRAMES = SAMPLE_RATE * CHUNK_MS // 1000
@@ -112,6 +112,14 @@ async def print_transcript(conn, show_reply: bool, out_path: str | None, stop: a
     """Render transcription events as lines, one per turn."""
     out = open(out_path, "a", encoding="utf-8") if out_path else None
     partial = ""
+
+    def line(text: str) -> None:
+        stamp = datetime.now().strftime("%H:%M:%S")
+        print(f"\r\033[K{stamp}  {text.strip()}")
+        if out:
+            out.write(f"{stamp}  {text.strip()}\n")
+            out.flush()
+
     async for event in conn:
         kind = event.type
         if kind == "session.updated":
@@ -124,12 +132,11 @@ async def print_transcript(conn, show_reply: bool, out_path: str | None, stop: a
             partial += event.delta
             print(event.delta, end="", flush=True)
         elif kind == "conversation.item.input_audio_transcription.completed":
-            text = (event.transcript or partial).strip()
-            stamp = datetime.now().strftime("%H:%M:%S")
-            print(f"\r\033[K{stamp}  {text}")
-            if out:
-                out.write(f"{stamp}  {text}\n")
-                out.flush()
+            line(event.transcript or partial)
+            partial = ""
+        elif kind == "response.done" and partial:
+            # A reply cut off by a barge-in, or one that failed, sends no .completed.
+            line(partial)
             partial = ""
         elif kind == "response.output_text.done" and show_reply:
             print(f"          ↳ {event.text.strip()}")

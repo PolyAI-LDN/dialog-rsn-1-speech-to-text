@@ -67,8 +67,9 @@ uv run transcribe.py --file clip.wav
 
 ## How it works
 
-- **Audio in.** The mic opens at 24 kHz, 16-bit mono, the protocol's one sample rate. Each
-  100 ms chunk is base64 encoded and sent with `input_audio_buffer.append`. No resampling.
+- **Audio in.** The mic opens at 24 kHz, 16-bit mono, the rate the service assumes when none is
+  declared. Each 100 ms chunk is base64 encoded and sent with `input_audio_buffer.append`. The
+  client does no resampling.
 - **Turn taking.** The session asks for `server_vad` with `create_response`, so the service
   decides when you stopped talking and starts a turn on its own.
 - **Transcript out.** Dialog-RSN-1 transcribes as part of generating its turn. The words arrive
