@@ -163,9 +163,9 @@ def pick_device(name: str | None):
 
 async def main(args) -> None:
     load_dotenv()
-    key = os.environ.get("DIALOG_API_KEY")
+    key = os.environ.get("POLY_API_KEY")
     if not key:
-        sys.exit("DIALOG_API_KEY is not set. Copy ../.env.example to ../.env and fill it in.")
+        sys.exit("POLY_API_KEY is not set. Copy ../.env.example to ../.env and fill it in.")
     url = args.url or os.environ.get("DIALOG_REALTIME_URL") or DEFAULT_URL
 
     # The SDK takes the base URL and appends /realtime itself.
