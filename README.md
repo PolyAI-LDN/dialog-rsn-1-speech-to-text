@@ -18,7 +18,7 @@ session is the client's base URL and key.
 ```python
 from openai import AsyncOpenAI
 
-client = AsyncOpenAI(api_key=DIALOG_API_KEY, base_url="https://api.studio.poly.ai/v1")
+client = AsyncOpenAI(api_key=POLY_API_KEY, base_url="https://api.studio.poly.ai/v1")
 
 async with client.realtime.connect(model="dialog-rsn-1") as conn:
     await conn.session.update(session={...})

@@ -200,9 +200,9 @@ async function main() {
   });
   if (args["list-devices"]) return listDevices();
 
-  const apiKey = process.env.DIALOG_API_KEY;
+  const apiKey = process.env.POLY_API_KEY;
   if (!apiKey) {
-    console.error("DIALOG_API_KEY is not set. Copy ../.env.example to ../.env and fill it in.");
+    console.error("POLY_API_KEY is not set. Copy ../.env.example to ../.env and fill it in.");
     process.exit(1);
   }
   const url = args.url || process.env.DIALOG_REALTIME_URL || DEFAULT_URL;
