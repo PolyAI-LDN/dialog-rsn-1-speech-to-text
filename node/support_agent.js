@@ -18,7 +18,7 @@ import { OpenAIRealtimeWS } from "openai/realtime/ws";
 import { GREETING, INSTRUCTIONS } from "./prompt.js";
 
 const MODEL = "dialog-rsn-1";
-const DEFAULT_URL = "https://api.studio.poly.ai/v1";
+const DEFAULT_URL = "wss://api.studio.poly.ai/v1/realtime";
 
 // The protocol's one sample rate. The mic opens at it, so nothing resamples anywhere.
 const SAMPLE_RATE = 24_000;
@@ -38,7 +38,8 @@ const SESSION = {
 };
 
 // The .env next to this folder's parent is the shared one; a local .env wins if present.
-for (const path of ["../.env", ".env"]) {
+// loadEnvFile never overwrites a variable that is already set, so the local file loads first.
+for (const path of [".env", "../.env"]) {
   try {
     process.loadEnvFile(new URL(path, import.meta.url));
   } catch {
@@ -126,7 +127,8 @@ async function pumpFile(rt, path) {
   const bytesPerChunk = CHUNK_FRAMES * 2;
   const started = performance.now();
   let sent = 0;
-  for (let at = 0; at < pcm.length; at += bytesPerChunk) {
+  const open = () => rt.socket.readyState === rt.socket.OPEN;
+  for (let at = 0; at < pcm.length && open(); at += bytesPerChunk) {
     const chunk = pcm.subarray(at, at + bytesPerChunk);
     rt.send({ type: "input_audio_buffer.append", audio: chunk.toString("base64") });
     sent += chunk.length / 2;
@@ -135,7 +137,7 @@ async function pumpFile(rt, path) {
   }
   // A trailing second of silence lets the VAD close the last turn.
   const silence = Buffer.alloc(bytesPerChunk).toString("base64");
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 10 && open(); i++) {
     rt.send({ type: "input_audio_buffer.append", audio: silence });
     await sleep(CHUNK_MS);
   }
@@ -182,6 +184,8 @@ function renderConversation(rt) {
   });
   rt.on("error", (err) => {
     console.error(`[error] ${err.message}`);
+    // Usually a refused session.update, which leaves the session on the server's defaults.
+    if (err.error?.type === "invalid_request_error") rt.close();
   });
 }
 
@@ -201,10 +205,11 @@ async function main() {
     console.error("DIALOG_API_KEY is not set. Copy ../.env.example to ../.env and fill it in.");
     process.exit(1);
   }
-  const baseURL = args.url || process.env.DIALOGUE_API_URL || DEFAULT_URL;
+  const url = args.url || process.env.DIALOG_REALTIME_URL || DEFAULT_URL;
 
   // The SDK builds wss://<host>/v1/realtime?model=... from the client's base URL and sends the
   // key as Authorization: Bearer. Nothing else about the connection is ours.
+  const baseURL = url.replace(/\/realtime$/, "").replace(/^wss:/, "https:");
   const client = new OpenAI({ apiKey, baseURL });
   const rt = new OpenAIRealtimeWS({ model: MODEL }, client);
   console.log(`connecting to ${rt.url} …`);
@@ -230,7 +235,7 @@ async function main() {
   if (args.file) {
     await pumpFile(rt, args.file);
     // Give the last turn time to come back before closing.
-    await Promise.race([closed, sleep(20_000)]);
+    await Promise.race([closed, sleep(20_000, undefined, { ref: false })]);
     rt.close();
   } else {
     const stopMic = pumpMicrophone(rt, pickDevice(args.device));
@@ -241,6 +246,7 @@ async function main() {
       process.exit(0);
     });
     await closed;
+    stopMic();
   }
 }
 
