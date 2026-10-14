@@ -27,7 +27,7 @@ from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
 MODEL = "dialog-rsn-1"
-DEFAULT_URL = "https://api.studio.poly.ai/v1"
+DEFAULT_URL = "wss://api.studio.poly.ai/v1/realtime"
 
 # The protocol's one sample rate. A stock client streams 24 kHz without saying so, and the
 # service reads an undeclared rate as 24 kHz, so the mic is opened at that rate and no
@@ -159,11 +159,13 @@ async def main(args) -> None:
     key = os.environ.get("DIALOG_API_KEY")
     if not key:
         sys.exit("DIALOG_API_KEY is not set. Copy ../.env.example to ../.env and fill it in.")
-    url = args.url or os.environ.get("DIALOGUE_API_URL") or DEFAULT_URL
+    url = args.url or os.environ.get("DIALOG_REALTIME_URL") or DEFAULT_URL
 
-    client = AsyncOpenAI(api_key=key, base_url=url)
+    # The SDK takes the base URL and appends /realtime itself.
+    base_url = url.removesuffix("/realtime").replace("wss://", "https://", 1)
+    client = AsyncOpenAI(api_key=key, base_url=base_url)
     stop = asyncio.Event()
-    print(f"connecting to {url}/realtime …")
+    print(f"connecting to {url} …")
     async with client.realtime.connect(model=MODEL) as conn:
         await conn.session.update(session=SESSION)
         printer = asyncio.create_task(print_transcript(conn, args.reply, args.out, stop))
@@ -180,7 +182,7 @@ async def main(args) -> None:
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Speech to text on Dialog-RSN-1.")
-    parser.add_argument("--url", help=f"base URL, /realtime is appended (default {DEFAULT_URL})")
+    parser.add_argument("--url", help=f"realtime URL (default {DEFAULT_URL})")
     parser.add_argument("--file", help="stream a 24 kHz mono PCM16 WAV instead of the microphone")
     parser.add_argument("--device", help="microphone index or name substring")
     parser.add_argument("--list-devices", action="store_true", help="list input devices and exit")

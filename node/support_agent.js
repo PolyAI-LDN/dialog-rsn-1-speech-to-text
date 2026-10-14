@@ -18,7 +18,7 @@ import { OpenAIRealtimeWS } from "openai/realtime/ws";
 import { GREETING, INSTRUCTIONS } from "./prompt.js";
 
 const MODEL = "dialog-rsn-1";
-const DEFAULT_URL = "https://api.studio.poly.ai/v1";
+const DEFAULT_URL = "wss://api.studio.poly.ai/v1/realtime";
 
 // The protocol's one sample rate. The mic opens at it, so nothing resamples anywhere.
 const SAMPLE_RATE = 24_000;
@@ -205,10 +205,11 @@ async function main() {
     console.error("DIALOG_API_KEY is not set. Copy ../.env.example to ../.env and fill it in.");
     process.exit(1);
   }
-  const baseURL = args.url || process.env.DIALOGUE_API_URL || DEFAULT_URL;
+  const url = args.url || process.env.DIALOG_REALTIME_URL || DEFAULT_URL;
 
   // The SDK builds wss://<host>/v1/realtime?model=... from the client's base URL and sends the
   // key as Authorization: Bearer. Nothing else about the connection is ours.
+  const baseURL = url.replace(/\/realtime$/, "").replace(/^wss:/, "https:");
   const client = new OpenAI({ apiKey, baseURL });
   const rt = new OpenAIRealtimeWS({ model: MODEL }, client);
   console.log(`connecting to ${rt.url} …`);

@@ -44,7 +44,7 @@ The `.env` lives at the repo root and is shared by the Python and Node programs.
 
 Needs Python 3.12 and a microphone. Personal access tokens are refused by the service; use a
 workspace key. A key from a regional Studio (US, EU or UK) only works on that region's host, so
-set `DIALOGUE_API_URL` in `.env` or pass `--url`, for example `https://api.us.poly.ai/v1`.
+set `DIALOG_REALTIME_URL` in `.env` or pass `--url`, for example `wss://api.us.poly.ai/v1/realtime`.
 
 ## Usage
 
