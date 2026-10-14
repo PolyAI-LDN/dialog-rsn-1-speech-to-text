@@ -43,7 +43,8 @@ uv run transcribe.py
 The `.env` lives at the repo root and is shared by the Python and Node programs.
 
 Needs Python 3.12 and a microphone. Personal access tokens are refused by the service; use a
-workspace key.
+workspace key. A key from a regional Studio (US, EU or UK) only works on that region's host, so
+set `DIALOGUE_API_URL` in `.env` or pass `--url`, for example `https://api.us.poly.ai/v1`.
 
 ## Usage
 
@@ -54,7 +55,7 @@ workspace key.
 | `--file speech.wav` | stream a 24 kHz mono PCM16 WAV at real time instead of the mic |
 | `--reply` | also print what the model said back |
 | `--out notes.txt` | append each finished line to a file |
-| `--url URL` | another region, for example `https://api.dev.poly.ai/v1` |
+| `--url URL` | another region's host, for example `https://api.us.poly.ai/v1` |
 
 To make a test clip on a Mac:
 
@@ -76,7 +77,9 @@ uv run transcribe.py --file clip.wav
   timestamp.
 - **The reply.** A turn always produces a text reply. The instructions ask for the single word
   "ok" so it is fast and cheap. `--reply` shows it, mainly as proof the model heard you.
-- **Text only.** `output_modalities` is `["text"]`. The service has no TTS, so nothing plays.
+- **Text only.** `output_modalities` is `["text"]`. A new session defaults to `["audio"]`, which
+  adds server-side speech and sends the reply as `response.output_audio_transcript.*` instead of
+  `response.output_text.*`. Nothing plays here.
 
 ## The support agent
 

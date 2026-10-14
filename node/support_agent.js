@@ -38,7 +38,8 @@ const SESSION = {
 };
 
 // The .env next to this folder's parent is the shared one; a local .env wins if present.
-for (const path of ["../.env", ".env"]) {
+// loadEnvFile never overwrites a variable that is already set, so the local file loads first.
+for (const path of [".env", "../.env"]) {
   try {
     process.loadEnvFile(new URL(path, import.meta.url));
   } catch {
@@ -126,7 +127,8 @@ async function pumpFile(rt, path) {
   const bytesPerChunk = CHUNK_FRAMES * 2;
   const started = performance.now();
   let sent = 0;
-  for (let at = 0; at < pcm.length; at += bytesPerChunk) {
+  const open = () => rt.socket.readyState === rt.socket.OPEN;
+  for (let at = 0; at < pcm.length && open(); at += bytesPerChunk) {
     const chunk = pcm.subarray(at, at + bytesPerChunk);
     rt.send({ type: "input_audio_buffer.append", audio: chunk.toString("base64") });
     sent += chunk.length / 2;
@@ -135,7 +137,7 @@ async function pumpFile(rt, path) {
   }
   // A trailing second of silence lets the VAD close the last turn.
   const silence = Buffer.alloc(bytesPerChunk).toString("base64");
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 10 && open(); i++) {
     rt.send({ type: "input_audio_buffer.append", audio: silence });
     await sleep(CHUNK_MS);
   }
@@ -182,6 +184,8 @@ function renderConversation(rt) {
   });
   rt.on("error", (err) => {
     console.error(`[error] ${err.message}`);
+    // Usually a refused session.update, which leaves the session on the server's defaults.
+    if (err.error?.type === "invalid_request_error") rt.close();
   });
 }
 
@@ -230,7 +234,7 @@ async function main() {
   if (args.file) {
     await pumpFile(rt, args.file);
     // Give the last turn time to come back before closing.
-    await Promise.race([closed, sleep(20_000)]);
+    await Promise.race([closed, sleep(20_000, undefined, { ref: false })]);
     rt.close();
   } else {
     const stopMic = pumpMicrophone(rt, pickDevice(args.device));
@@ -241,6 +245,7 @@ async function main() {
       process.exit(0);
     });
     await closed;
+    stopMic();
   }
 }
 
