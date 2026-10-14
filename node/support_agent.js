@@ -20,7 +20,8 @@ import { GREETING, INSTRUCTIONS } from "./prompt.js";
 const MODEL = "dialog-rsn-1";
 const DEFAULT_URL = "wss://api.studio.poly.ai/v1/realtime";
 
-// The protocol's one sample rate. The mic opens at it, so nothing resamples anywhere.
+// The rate the service assumes when none is declared. The mic opens at it, so nothing resamples
+// on the client.
 const SAMPLE_RATE = 24_000;
 const CHUNK_MS = 100;
 const CHUNK_FRAMES = (SAMPLE_RATE * CHUNK_MS) / 1000;
