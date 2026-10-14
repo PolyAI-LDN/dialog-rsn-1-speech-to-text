@@ -34,7 +34,7 @@ The SDK builds `wss://api.studio.poly.ai/v1/realtime?model=dialog-rsn-1`, sends 
 ## Setup
 
 ```bash
-cp .env.example .env      # then paste a workspace API key from Agent Studio
+cp .env.example .env      # then paste your API key from studio.poly.ai
 cd python
 uv sync
 uv run transcribe.py
@@ -42,9 +42,9 @@ uv run transcribe.py
 
 The `.env` lives at the repo root and is shared by the Python and Node programs.
 
-Needs Python 3.12 and a microphone. Personal access tokens are refused by the service; use a
-workspace key. A key from a regional Studio (US, EU or UK) only works on that region's host, so
-set `DIALOG_REALTIME_URL` in `.env` or pass `--url`, for example `wss://api.us.poly.ai/v1/realtime`.
+Needs Python 3.12, a microphone, and a Dialog-RSN-1 API key from
+[studio.poly.ai](https://studio.poly.ai): sign up or log in, then create one in the **API Keys** tab.
+To use another host, set `DIALOG_REALTIME_URL` in `.env` or pass `--url`.
 
 ## Usage
 
@@ -55,7 +55,7 @@ set `DIALOG_REALTIME_URL` in `.env` or pass `--url`, for example `wss://api.us.p
 | `--file speech.wav` | stream a 24 kHz mono PCM16 WAV at real time instead of the mic |
 | `--reply` | also print what the model said back |
 | `--out notes.txt` | append each finished line to a file |
-| `--url URL` | another region's host, for example `https://api.us.poly.ai/v1` |
+| `--url URL` | another realtime URL (default `wss://api.studio.poly.ai/v1/realtime`) |
 
 To make a test clip on a Mac:
 
