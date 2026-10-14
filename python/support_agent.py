@@ -83,9 +83,9 @@ async def print_conversation(conn, stop: asyncio.Event) -> None:
 
 async def main(args) -> None:
     load_dotenv()
-    key = os.environ.get("DIALOGUE_API_KEY")
+    key = os.environ.get("DIALOG_API_KEY")
     if not key:
-        sys.exit("DIALOGUE_API_KEY is not set. Copy ../.env.example to ../.env and fill it in.")
+        sys.exit("DIALOG_API_KEY is not set. Copy ../.env.example to ../.env and fill it in.")
     url = args.url or os.environ.get("DIALOGUE_API_URL") or DEFAULT_URL
 
     client = AsyncOpenAI(api_key=key, base_url=url)
