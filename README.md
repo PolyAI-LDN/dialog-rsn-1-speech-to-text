@@ -1,6 +1,6 @@
 # Speech to text on Dialog-RSN-1
 
-Companion code for [Transcribe speech with the OpenAI Realtime SDK](https://dialog-rsn-1-eap-docs.pages.dev/dialog-rsn-1/guides/speech-to-text/).
+Companion code for [Transcribe speech with the OpenAI Realtime SDK](https://docs.poly.ai/dialog-rsn-1/guides/speech-to-text).
 
 Two small terminal programs on the OpenAI Realtime SDK, pointed at Dialog-RSN-1:
 
