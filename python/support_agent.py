@@ -105,14 +105,23 @@ async def main(args) -> None:
             }
         )
         printer = asyncio.create_task(print_conversation(conn, stop))
-        if args.file:
-            await pump_file(conn, args.file, stop)
-            await asyncio.wait({printer}, timeout=20)
-        else:
-            pump = asyncio.create_task(pump_microphone(conn, pick_device(args.device), stop))
-            await asyncio.wait({printer, pump}, return_when=asyncio.FIRST_COMPLETED)
+        pump = asyncio.create_task(
+            pump_file(conn, args.file, stop) if args.file
+            else pump_microphone(conn, pick_device(args.device), stop)
+        )
+        try:
+            done, _ = await asyncio.wait({printer, pump}, return_when=asyncio.FIRST_COMPLETED)
+            if args.file and pump in done:
+                pump.result()
+                await asyncio.wait({printer}, timeout=20)
+            for task in (printer, pump):
+                if task.done():
+                    task.result()
+        finally:
             pump.cancel()
-        printer.cancel()
+            printer.cancel()
+            await asyncio.gather(pump, printer, return_exceptions=True)
+
 
 
 def parse_args():
