@@ -49,6 +49,14 @@ async def print_conversation(conn, stop: asyncio.Event) -> None:
     heard = ""
     reply = ""
     reply_shown = False
+    reply_done = False
+    heard_shown = False
+
+    def reset() -> None:
+        nonlocal heard, reply, reply_shown, reply_done, heard_shown
+        heard, reply = "", ""
+        reply_shown = reply_done = heard_shown = False
+
     async for event in conn:
         kind = event.type
         if kind == "session.updated":
@@ -61,19 +69,31 @@ async def print_conversation(conn, stop: asyncio.Event) -> None:
         elif kind == "conversation.item.input_audio_transcription.completed":
             print(f"\r\033[K{stamp()}  You:  {(event.transcript or heard).strip()}")
             heard = ""
+            heard_shown = True
             if reply:
                 print(f"{stamp()}  Sam:  {reply}", end="", flush=True)
                 reply_shown = True
+                if reply_done:
+                    print("\n")
+                    reset()
         elif kind == "response.output_text.delta":
             reply += event.delta
             if reply_shown:
                 print(event.delta, end="", flush=True)
         elif kind == "response.output_text.done":
-            if not reply_shown:
-                print(f"\r\033[K{stamp()}  Sam:  {event.text}", end="")
-            print("\n")
-            reply = ""
-            reply_shown = False
+            reply = event.text or reply
+            reply_done = True
+            if heard_shown:
+                if not reply_shown:
+                    print(f"\r\033[K{stamp()}  Sam:  {reply}", end="")
+                print("\n")
+                reset()
+        elif kind == "response.done" and event.response.status != "completed":
+            if heard and not heard_shown:
+                print(f"\r\033[K{stamp()}  You:  {heard.strip()}")
+            if reply and not reply_shown:
+                print(f"{stamp()}  Sam:  {reply}\n")
+            reset()
         elif kind == "error":
             print(f"[error] {event.error.message}", file=sys.stderr)
             if event.error.type == "invalid_request_error":
