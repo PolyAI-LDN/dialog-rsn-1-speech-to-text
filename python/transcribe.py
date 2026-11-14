@@ -176,15 +176,23 @@ async def main(args) -> None:
     async with client.realtime.connect(model=MODEL) as conn:
         await conn.session.update(session=SESSION)
         printer = asyncio.create_task(print_transcript(conn, args.reply, args.out, stop))
-        if args.file:
-            await pump_file(conn, args.file, stop)
-            # Give the last turn time to come back before closing.
-            await asyncio.wait({printer}, timeout=15)
-        else:
-            pump = asyncio.create_task(pump_microphone(conn, pick_device(args.device), stop))
-            await asyncio.wait({printer, pump}, return_when=asyncio.FIRST_COMPLETED)
+        pump = asyncio.create_task(
+            pump_file(conn, args.file, stop) if args.file
+            else pump_microphone(conn, pick_device(args.device), stop)
+        )
+        try:
+            done, _ = await asyncio.wait({printer, pump}, return_when=asyncio.FIRST_COMPLETED)
+            if args.file and pump in done:
+                pump.result()
+                await asyncio.wait({printer}, timeout=15)
+            for task in (printer, pump):
+                if task.done():
+                    task.result()
+        finally:
             pump.cancel()
-        printer.cancel()
+            printer.cancel()
+            await asyncio.gather(pump, printer, return_exceptions=True)
+
 
 
 def parse_args():
