@@ -155,8 +155,14 @@ function renderConversation(rt) {
   let heard = "";
   let reply = "";
   let replyShown = false;
+  let replyDone = false;
+  let heardShown = false;
   const out = (s) => process.stdout.write(s);
 
+  const reset = () => {
+    heard = reply = "";
+    replyShown = replyDone = heardShown = false;
+  };
   rt.on("session.updated", () => {
     console.log(`[connected to ${MODEL}]  speak when ready, Ctrl-C to quit\n`);
     console.log(`${stamp()}  Sam:  ${GREETING}\n`);
@@ -168,9 +174,14 @@ function renderConversation(rt) {
   rt.on("conversation.item.input_audio_transcription.completed", (e) => {
     out(`${CLEAR}${stamp()}  You:  ${(e.transcript || heard).trim()}\n`);
     heard = "";
+    heardShown = true;
     if (reply) {
       out(`${stamp()}  Sam:  ${reply}`);
       replyShown = true;
+      if (replyDone) {
+        out("\n\n");
+        reset();
+      }
     }
   });
   rt.on("response.output_text.delta", (e) => {
@@ -178,10 +189,19 @@ function renderConversation(rt) {
     if (replyShown) out(e.delta);
   });
   rt.on("response.output_text.done", (e) => {
-    if (!replyShown) out(`${CLEAR}${stamp()}  Sam:  ${e.text}`);
-    out("\n\n");
-    reply = "";
-    replyShown = false;
+    reply = e.text || reply;
+    replyDone = true;
+    if (heardShown) {
+      if (!replyShown) out(`${CLEAR}${stamp()}  Sam:  ${reply}`);
+      out("\n\n");
+      reset();
+    }
+  });
+  rt.on("response.done", (e) => {
+    if (e.response.status === "completed") return;
+    if (heard && !heardShown) out(`${CLEAR}${stamp()}  You:  ${heard.trim()}\n`);
+    if (reply && !replyShown) out(`${stamp()}  Sam:  ${reply}\n\n`);
+    reset();
   });
   rt.on("error", (err) => {
     console.error(`[error] ${err.message}`);
