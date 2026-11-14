@@ -120,33 +120,35 @@ async def print_transcript(conn, show_reply: bool, out_path: str | None, stop: a
             out.write(f"{stamp}  {text.strip()}\n")
             out.flush()
 
-    async for event in conn:
-        kind = event.type
-        if kind == "session.updated":
-            print(f"[connected to {MODEL}]  speak when ready, Ctrl-C to quit\n")
-        elif kind == "input_audio_buffer.speech_started":
-            print("…", end="", flush=True)
-        elif kind == "conversation.item.input_audio_transcription.delta":
-            if not partial:
-                print("\r\033[K", end="")
-            partial += event.delta
-            print(event.delta, end="", flush=True)
-        elif kind == "conversation.item.input_audio_transcription.completed":
-            line(event.transcript or partial)
-            partial = ""
-        elif kind == "response.done" and partial:
-            # A reply cut off by a barge-in, or one that failed, sends no .completed.
-            line(partial)
-            partial = ""
-        elif kind == "response.output_text.done" and show_reply:
-            print(f"          ↳ {event.text.strip()}")
-        elif kind == "error":
-            print(f"[error] {event.error.message}", file=sys.stderr)
-            if event.error.type == "invalid_request_error":
-                stop.set()
-                break
-    if out:
-        out.close()
+    try:
+        async for event in conn:
+            kind = event.type
+            if kind == "session.updated":
+                print(f"[connected to {MODEL}]  speak when ready, Ctrl-C to quit\n")
+            elif kind == "input_audio_buffer.speech_started":
+                print("…", end="", flush=True)
+            elif kind == "conversation.item.input_audio_transcription.delta":
+                if not partial:
+                    print("\r\033[K", end="")
+                partial += event.delta
+                print(event.delta, end="", flush=True)
+            elif kind == "conversation.item.input_audio_transcription.completed":
+                line(event.transcript or partial)
+                partial = ""
+            elif kind == "response.done" and partial:
+                # A reply cut off by a barge-in, or one that failed, sends no .completed.
+                line(partial)
+                partial = ""
+            elif kind == "response.output_text.done" and show_reply:
+                print(f"          ↳ {event.text.strip()}")
+            elif kind == "error":
+                print(f"[error] {event.error.message}", file=sys.stderr)
+                if event.error.type == "invalid_request_error":
+                    stop.set()
+                    break
+    finally:
+        if out:
+            out.close()
 
 
 def pick_device(name: str | None):
