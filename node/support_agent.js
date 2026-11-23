@@ -4,7 +4,7 @@
 // Speak, and Sam from Northwind Outfitters answers in text. Everything Sam knows is in
 // prompt.js: three orders and the return policy, all in the instructions, no tools.
 //
-//   npm start                              microphone, us-1 production
+//   npm start                              the microphone
 //   npm start -- --file call.wav           a 24 kHz mono PCM16 WAV instead of the mic
 //   npm start -- --list-devices            pick a microphone by name or index
 
@@ -20,8 +20,7 @@ import { GREETING, INSTRUCTIONS } from "./prompt.js";
 const MODEL = "dialog-rsn-1";
 const DEFAULT_URL = "wss://api.studio.poly.ai/v1/realtime";
 
-// The rate the service assumes when none is declared. The mic opens at it, so nothing resamples
-// on the client.
+// The session declares 24 kHz and the mic opens at it, so nothing resamples on the client.
 const SAMPLE_RATE = 24_000;
 const CHUNK_MS = 100;
 const CHUNK_FRAMES = (SAMPLE_RATE * CHUNK_MS) / 1000;
@@ -147,9 +146,9 @@ async function pumpFile(rt, path) {
 /**
  * Render the call: what you said, then Sam's reply.
  *
- * The model emits its reply before the transcript of what it heard, since the transcript is the
- * last section of its output. The reply is held back until the transcript has printed, so the
- * terminal reads in the order the conversation happened.
+ * The transcript of what the caller said can arrive after the reply has started. The reply is
+ * held back until the transcript has printed, so the terminal reads in the order the
+ * conversation happened.
  */
 function renderConversation(rt) {
   let heard = "";

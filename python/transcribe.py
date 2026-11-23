@@ -34,7 +34,6 @@ CHUNK_MS = 100
 CHUNK_FRAMES = SAMPLE_RATE * CHUNK_MS // 1000
 
 
-
 def session(language: str) -> dict:
     """A transcription session: each turn ends at a pause and is transcribed, never answered."""
     return {

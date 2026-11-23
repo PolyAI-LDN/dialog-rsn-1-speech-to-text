@@ -160,7 +160,8 @@ function renderTranscript(rt) {
     partial = "";
   });
   rt.on("conversation.item.input_audio_transcription.failed", (e) => {
-    out(`${CLEAR}[not transcribed] ${e.error?.message ?? ""}\n`);
+    out(CLEAR);
+    console.error(`[not transcribed] ${e.error?.message ?? ""}`);
     partial = "";
   });
   rt.on("error", (err) => {
