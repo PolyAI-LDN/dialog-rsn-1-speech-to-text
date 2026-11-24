@@ -1,13 +1,12 @@
 """Speech to text on Dialog-RSN-1, through the OpenAI Realtime SDK.
 
-The only thing that changes from an OpenAI session is the client's base URL and key. The SDK
-opens the websocket, sets the auth header, and parses every event. Audio goes up as PCM16, and
-the transcript comes back as the protocol's own transcription events.
+The program opens a transcription session: Dialog-RSN-1 transcribes each turn and never
+replies. The SDK opens the websocket, sets the auth header, and parses every event.
 
-    uv run transcribe.py                       # microphone, us-1 production
+    uv run transcribe.py                       # the microphone, in English
+    uv run transcribe.py --language es         # the caller's language, as an ISO 639 code
     uv run transcribe.py --file speech.wav     # a 24 kHz mono PCM16 WAV instead of the mic
     uv run transcribe.py --list-devices        # pick a microphone by name or index
-    uv run transcribe.py --reply               # also show what the model said back
     uv run transcribe.py --out notes.txt       # append each finished line to a file
 """
 
@@ -29,31 +28,24 @@ from openai import AsyncOpenAI
 MODEL = "dialog-rsn-1"
 DEFAULT_URL = "wss://api.studio.poly.ai/v1/realtime"
 
-# A stock client streams 24 kHz without saying so, and the service reads an undeclared rate as
-# 24 kHz, so the mic is opened at that rate. The service resamples to the model's own rate, so
-# nothing resamples on the client.
+# The session declares 24 kHz and the mic opens at it, so nothing resamples on the client.
 SAMPLE_RATE = 24_000
 CHUNK_MS = 100
 CHUNK_FRAMES = SAMPLE_RATE * CHUNK_MS // 1000
 
-# The transcript is produced as part of the model's turn, so a reply is generated whether or not
-# it is shown. Asking for the shortest possible one keeps the turn quick and cheap.
-INSTRUCTIONS = (
-    "You are a silent transcription service. Whatever the caller says, reply with exactly "
-    "one word: ok."
-)
 
-SESSION = {
-    "type": "realtime",
-    "output_modalities": ["text"],
-    "instructions": INSTRUCTIONS,
-    "audio": {
-        "input": {
-            "format": {"type": "audio/pcm", "rate": SAMPLE_RATE},
-            "turn_detection": {"type": "server_vad", "create_response": True},
-        }
-    },
-}
+def session(language: str) -> dict:
+    """A transcription session: each turn ends at a pause and is transcribed, never answered."""
+    return {
+        "type": "transcription",
+        "audio": {
+            "input": {
+                "format": {"type": "audio/pcm", "rate": SAMPLE_RATE},
+                "transcription": {"language": language},
+                "turn_detection": {"type": "server_vad"},
+            }
+        },
+    }
 
 
 def b64(chunk: bytes) -> str:
@@ -108,7 +100,7 @@ async def pump_file(conn, path: str, stop: asyncio.Event) -> None:
         await asyncio.sleep(CHUNK_MS / 1000)
 
 
-async def print_transcript(conn, show_reply: bool, out_path: str | None, stop: asyncio.Event):
+async def print_transcript(conn, out_path: str | None, stop: asyncio.Event):
     """Render transcription events as lines, one per turn."""
     out = open(out_path, "a", encoding="utf-8") if out_path else None
     partial = ""
@@ -132,14 +124,11 @@ async def print_transcript(conn, show_reply: bool, out_path: str | None, stop: a
             partial += event.delta
             print(event.delta, end="", flush=True)
         elif kind == "conversation.item.input_audio_transcription.completed":
-            line(event.transcript or partial)
+            line(event.transcript)
             partial = ""
-        elif kind == "response.done" and partial:
-            # A reply cut off by a barge-in, or one that failed, sends no .completed.
-            line(partial)
+        elif kind == "conversation.item.input_audio_transcription.failed":
+            print(f"\r\033[K[not transcribed] {event.error.message}", file=sys.stderr)
             partial = ""
-        elif kind == "response.output_text.done" and show_reply:
-            print(f"          ↳ {event.text.strip()}")
         elif kind == "error":
             print(f"[error] {event.error.message}", file=sys.stderr)
             if event.error.type == "invalid_request_error":
@@ -173,9 +162,11 @@ async def main(args) -> None:
     client = AsyncOpenAI(api_key=key, base_url=base_url)
     stop = asyncio.Event()
     print(f"connecting to {url} …")
-    async with client.realtime.connect(model=MODEL) as conn:
-        await conn.session.update(session=SESSION)
-        printer = asyncio.create_task(print_transcript(conn, args.reply, args.out, stop))
+    async with client.realtime.connect(
+        model=MODEL, extra_query={"intent": "transcription"}
+    ) as conn:
+        await conn.session.update(session=session(args.language))
+        printer = asyncio.create_task(print_transcript(conn, args.out, stop))
         if args.file:
             await pump_file(conn, args.file, stop)
             # Give the last turn time to come back before closing.
@@ -193,7 +184,9 @@ def parse_args():
     parser.add_argument("--file", help="stream a 24 kHz mono PCM16 WAV instead of the microphone")
     parser.add_argument("--device", help="microphone index or name substring")
     parser.add_argument("--list-devices", action="store_true", help="list input devices and exit")
-    parser.add_argument("--reply", action="store_true", help="also print the model's reply")
+    parser.add_argument(
+        "--language", default="en", help="the caller's language, an ISO 639 code (default en)"
+    )
     parser.add_argument("--out", help="append each finished line to this file")
     return parser.parse_args()
 

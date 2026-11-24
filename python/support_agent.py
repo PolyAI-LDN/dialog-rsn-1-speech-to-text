@@ -3,7 +3,7 @@
 Speak, and Sam from Northwind Outfitters answers in text. Everything Sam knows is in
 `prompt.py`: three orders and the return policy, all in the instructions, no tools.
 
-    uv run support_agent.py                     # microphone, us-1 production
+    uv run support_agent.py                     # the microphone
     uv run support_agent.py --file call.wav     # a 24 kHz mono PCM16 WAV instead of the mic
     uv run support_agent.py --list-devices      # pick a microphone by name or index
 """
@@ -42,9 +42,9 @@ def stamp() -> str:
 async def print_conversation(conn, stop: asyncio.Event) -> None:
     """Render the call: what you said, then Sam's reply.
 
-    The model emits its reply before the transcript of what it heard, since the transcript is
-    the last section of its output. The reply is held back until the transcript has printed,
-    so the terminal reads in the order the conversation happened.
+    The transcript of what the caller said can arrive after the reply has started. The reply is
+    held back until the transcript has printed, so the terminal reads in the order the
+    conversation happened.
     """
     heard = ""
     reply = ""

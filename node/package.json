@@ -1,11 +1,12 @@
 {
-  "name": "dialog-rsn-1-support-agent",
+  "name": "dialog-rsn-1-speech-to-text",
   "version": "0.1.0",
-  "description": "Voice-in, text-out support agent on Dialog-RSN-1 through the OpenAI Realtime SDK",
+  "description": "Speech to text and a voice-in, text-out support agent on Dialog-RSN-1 through the OpenAI Realtime SDK",
   "type": "module",
   "private": true,
   "scripts": {
-    "start": "node support_agent.js"
+    "start": "node support_agent.js",
+    "transcribe": "node transcribe.js"
   },
   "engines": {
     "node": ">=22"
